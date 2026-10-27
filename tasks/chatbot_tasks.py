@@ -16,6 +16,8 @@ Key Features:
 
 import os
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 from dotenv import load_dotenv
 
 # Import the prompt template generators
@@ -25,12 +27,21 @@ from prompts.prompt_templates import (
     build_classification_prompt
 )
 
+import socket
+
+# Ensure reliable IPv4 socket connection on Windows (prevents IPv6 connection drops)
+try:
+    import urllib3.util.connection as urllib_conn
+    urllib_conn.allowed_gai_family = lambda: socket.AF_INET
+except Exception:
+    pass
+
 # Load environment variables from .env file in the project root
 load_dotenv()
 
 # Constants
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 REQUEST_TIMEOUT_SECONDS = 30
 
 
@@ -42,6 +53,10 @@ def get_api_credentials():
         tuple: (api_key, model_name)
     """
     api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key or api_key == "your_groq_api_key_here":
+        load_dotenv(dotenv_path=".env.example", override=True)
+        api_key = os.getenv("GROQ_API_KEY", "").strip()
+
     model = os.getenv("GROQ_MODEL", "").strip() or DEFAULT_MODEL
     return api_key, model
 
@@ -86,9 +101,18 @@ def call_groq_api(messages: list, temperature: float = 0.7) -> str:
         "max_tokens": 1024
     }
 
-    # 3. Send the HTTP POST request
+    # 3. Send the HTTP POST request with automatic retry for transient network issues
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        raise_on_status=False
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+
     try:
-        response = requests.post(
+        response = session.post(
             GROQ_API_URL,
             headers=headers,
             json=payload,
@@ -106,6 +130,8 @@ def call_groq_api(messages: list, temperature: float = 0.7) -> str:
         )
     except Exception as e:
         raise ConnectionError(f"Unexpected connection error occurred: {str(e)}")
+    finally:
+        session.close()
 
     # 4. Check HTTP status code
     if response.status_code == 401:

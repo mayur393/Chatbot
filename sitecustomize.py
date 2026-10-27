@@ -7,6 +7,13 @@ Transparently ensures pip, requests, and streamlit resolve domains reliably.
 
 import socket
 
+# Force IPv4 in urllib3 to avoid Windows IPv6 routing drops / WinError 10054
+try:
+    import urllib3.util.connection as _urllib_conn
+    _urllib_conn.allowed_gai_family = lambda: socket.AF_INET
+except Exception:
+    pass
+
 _orig_getaddrinfo = socket.getaddrinfo
 
 

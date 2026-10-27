@@ -1,18 +1,46 @@
-# Environment variables
-.env
+# ========================================================
+# Git Ignore Configuration
+# ========================================================
 
-# Python bytecode
+# Environment variables & secrets
+.env
+.env*.local
+*.env
+!.env.example
+
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
 venv/
+.venv/
 env/
 ENV/
+env.bak/
+venv.bak/
 
 # Streamlit secrets & cache
 .streamlit/secrets.toml
+.streamlit/cache/
 
-# Output data & logs
+# IDE & Editor settings
+.idea/
+*.sublime-project
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Output data, logs & evaluation history
 *.log
+data/evaluation_history.csv

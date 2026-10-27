@@ -73,7 +73,27 @@ if not api_key:
 else:
     st.sidebar.success("✅ Groq API Key detected")
 
-st.sidebar.markdown(f"**Model:** `{model_name}`")
+available_models = [
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant"
+]
+if model_name not in available_models:
+    available_models.insert(0, model_name)
+
+selected_model_option = st.sidebar.selectbox(
+    "Active LLM Model:",
+    options=available_models,
+    index=available_models.index(model_name),
+    help="Select the model to run on Groq."
+)
+if selected_model_option != model_name:
+    os.environ["GROQ_MODEL"] = selected_model_option
+    model_name = selected_model_option
+
+st.sidebar.markdown(f"**Selected:** `{model_name}`")
 st.sidebar.markdown("**Backend:** Direct HTTP (`requests`)")
 
 st.sidebar.divider()
